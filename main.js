@@ -35,8 +35,37 @@ let main = async function Main () {
         for (const url of subCat) {
             await page.goto(url);
             let nextNavExist = await page.$('.nav_button.nav_next');
-            console.log(url);
-            console.log(nextNavExist);
+            
+            while (nextNavExist !== null) {
+                const cards = await page.$$eval('.card.mb-4.shadow-sm', allCards => {
+                    let cardData = [];
+                    allCards.forEach(card => {
+                        let audio = card.querySelector('.embed-responsive.float-left').querySelector('source').src;
+                        // Replace spaces between words
+                        let arabic = card.querySelector('div.col-12.text-right.font-arabic.mt-2.mb-4.h2.showArabic.clearfix').innerText.replace(/\s+/g, '')
+                        let ayaatText = card.querySelector('span.float-left.badge-success.rounded.px-3.py-1').innerText;
+                        let ayaatNumber = card.querySelector('span.badge.badge-pill.badge-info.ml-2.font-kalpurush-reading').innerText;
+                        cardData.push({
+                            audio,
+                            arabic,
+                            ayaatText,
+                            ayaatNumber
+                        });
+                    });
+                    return cardData;
+                });
+                console.log(JSON.stringify(cards, null, 2));  
+                console.log(cards.arabic);  
+                // Write data to a file
+                fs.writeFile(`${}-page.json`, JSON.stringify(cards, null, 2), (err) => {
+                    if (err) throw err;
+                    console.log('Data has been written to a file');
+                });
+                // Click next button and wait for the page to load
+                await page.click('.nav_button.nav_next');
+                await page.waitForURL(/.*pageNum_tafsirquran.*/);
+                nextNavExist = await page.$('.nav_button.nav_next');
+            }
             
         }
         
